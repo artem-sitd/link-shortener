@@ -2,9 +2,12 @@ import hashlib
 from datetime import datetime
 from database import collection
 
+
 # Функция для генерации хэша из оригинальной ссылки
 def generate_hash(original_url: str):
-    return hashlib.sha256(original_url.encode('utf-8')).hexdigest()[:8]  # берем первые 8 символов хэша
+    return hashlib.sha256(original_url.encode("utf-8")).hexdigest()[
+        :8
+    ]  # берем первые 8 символов хэша
 
 
 # Функция для проверки наличия URL в базе
@@ -19,7 +22,7 @@ async def create_unique_short_url(original_url: str):
     existing_url = await check_existing_url(original_url)
     if existing_url:
         # Если URL существует, возвращаем его короткую ссылку
-        return existing_url['short_url']
+        return existing_url["short_url"]
 
     # Если URL новый, генерируем новый короткий хэш
     while True:
@@ -33,10 +36,12 @@ async def create_unique_short_url(original_url: str):
             document = {
                 "original_url": original_url,
                 "short_url": short_hash,
-                "created_at": datetime.utcnow()
+                "created_at": datetime.utcnow(),
             }
             await collection.insert_one(document)
             return short_hash
 
         # Если такой короткий URL уже существует, генерируем новый
-        original_url = original_url + str(datetime.utcnow())  # модификация URL для создания уникального хэша
+        original_url = original_url + str(
+            datetime.utcnow()
+        )  # модификация URL для создания уникального хэша
