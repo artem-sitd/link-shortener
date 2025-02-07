@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: short-link-bot
+    environment:
+      - BOT_API_TOKEN=your-bot-api-token-here
+    depends_on:
+      - mongo
+    ports:
+      - "5000:5000"
+    networks:
+      - short-link-network
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo-db
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - short-link-network
+
+networks:
+  short-link-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
