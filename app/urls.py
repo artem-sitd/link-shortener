@@ -6,8 +6,7 @@ from database import collection
 # Функция для генерации хэша из оригинальной ссылки
 def generate_hash(original_url: str):
     return hashlib.sha256(original_url.encode("utf-8")).hexdigest()[
-        :8
-    ]  # берем первые 8 символов хэша
+           :8]  # берем первые 8 символов хэша
 
 
 # Функция для проверки наличия URL в базе
