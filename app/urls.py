@@ -1,7 +1,7 @@
 import hashlib
-from datetime import datetime
-from database import collection
-from settings import WEBHOOK_HOST
+import datetime
+from database import collection, client, db
+from settings import settings
 
 
 # Функция для генерации хэша из оригинальной ссылки
@@ -13,6 +13,9 @@ def generate_hash(original_url: str):
 
 # Функция для проверки наличия URL в базе
 async def check_existing_url(original_url: str):
+    print(f'collection: {collection}')
+    print(f'client: {client}')
+    print(f'db: {db}')
     existing_url = await collection.find_one({"original_url": original_url})
     return existing_url
 
@@ -29,13 +32,13 @@ async def create_unique_short_url(original_url: str):
     short_hash = generate_hash(original_url)
 
     # и соединяем с нашим доменом
-    short_url = f'{WEBHOOK_HOST}/s/{short_hash}'
+    short_url = f'{settings.main_domain}/s/{short_hash}'
 
     # создаем новый документ в монго с короткой, оригинальной ссылкой
     document = {
         "original_url": original_url,
         "short_url": short_url,
-        "created_at": datetime.now(datetime.UTC),
+        "created_at": datetime.datetime.now(datetime.UTC),
     }
     await collection.insert_one(document)
     return short_url

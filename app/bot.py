@@ -1,7 +1,16 @@
 import re
+from aiogram.enums import ParseMode
+from aiogram import Bot
+from aiogram.client.bot import DefaultBotProperties
 from urls import create_unique_short_url
-from aiogram import types
-from main import dp
+from aiogram import types, Dispatcher
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.filters import Command
+from settings import settings
+
+bot = Bot(token=settings.telegram_api_key, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+
+dp = Dispatcher(storage=MemoryStorage())
 
 URL_REGEX = re.compile(
     r"^(?:http|ftp)s?://"  # Протокол (http, https, ftp)
@@ -20,14 +29,16 @@ def is_valid_url(url: str) -> bool:
 
 
 # Команда /start
-@dp.message(commands=["start"])
+@dp.message(Command("start"))
 async def send_welcome(message: types.Message):
+    print('start user')
     await message.reply("Привет! Отправь мне длинную ссылку, и я сделаю её короткой.")
 
 
 # Основной хэндлер для сокращения ссылки
 @dp.message()
 async def shorten_url(message: types.Message):
+    print(f'message from user: {message.text}')
     original_url = message.text.strip()
 
     if not is_valid_url(original_url):
@@ -38,4 +49,4 @@ async def shorten_url(message: types.Message):
 
     short_url = await create_unique_short_url(original_url)
 
-    await message.reply(f"Ваша короткая ссылка: https://pqpq.pw/{short_url}")
+    await message.reply(f"Ваша короткая ссылка: {short_url}")

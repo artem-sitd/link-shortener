@@ -1,15 +1,9 @@
-from aiogram import Bot, Dispatcher, types
-from ..settings import telegram_api_key, WEBHOOK_PATH, WEBHOOK_URL
-from aiogram.enums import ParseMode
+from aiogram import types
+from settings import settings
 from aiohttp import web
-from aiogram.fsm.storage.memory import MemoryStorage
+from bot import dp, bot
 import asyncio
-from dotenv import load_dotenv
-from pathlib import Path
 from database import collection
-
-bot = Bot(token=telegram_api_key, parse_mode=ParseMode.HTML)
-dp = Dispatcher(storage=MemoryStorage())
 
 
 # здесь же прописать ручку для приема короткой ссылки для дальнейшего редиректа на имеющийся полный url
@@ -29,32 +23,55 @@ async def redirect(request):
 
 # прием вебхуков
 async def handle_webhook(request):
+    print('message from webhook')
     update = await request.json()
     await dp.feed_update(bot, types.Update(**update))
     return web.Response()
 
 
+async def index_page(request):
+    return web.Response(
+        text='<h1>This is test page. Hello!</h1>',
+        content_type='text/html')
+
+
 async def main():
-    # Устанавливаем вебхук
-    await bot.set_webhook(WEBHOOK_URL)
+    try:
+        print('start web application aiohttp')
+        # Запускаем веб-сервер для приема вебхуков
+        app = web.Application()
 
-    # Запускаем веб-сервер для приема вебхуков
-    app = web.Application()
+        # ручка для приема вебхук от телеграма
+        app.router.add_post(settings.WEBHOOK_PATH, handle_webhook)
 
-    # ручка для приема вебхук от телеграма
-    app.router.add_post(WEBHOOK_PATH, handle_webhook)
+        # ручка для редиректов
+        app.router.add_get('/s/{hash}', redirect)
+        app.router.add_get('/', index_page)
 
-    # ручка для редиректов
-    app.router.add_get('/s/{hash}', redirect)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, "0.0.0.0", 8080)
+        await site.start()
 
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", 443)  # HTTPS-порт
-    await site.start()
+        # Устанавливаем вебхук
+        print("set webhooks")
+        await bot.set_webhook(settings.WEBHOOK_URL)
+
+        # Бесконечный цикл для поддержания работы сервера
+        await asyncio.Event().wait()
+    except asyncio.CancelledError:
+        # Обработка остановки сервера
+        pass
+    finally:
+        # Корректное завершение работы
+        print('close session, storage, runner')
+        await bot.session.close()  # Закрываем сессию бота
+        await dp.storage.close()  # Закрываем хранилище диспетчера
+        await runner.cleanup()  # Останавливаем веб-сервер
 
 
 if __name__ == "__main__":
-    local = True
-    env_file = Path(__file__).parent.parent / ".env"
-    load_dotenv(dotenv_path=env_file)
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Сервер остановлен.")
