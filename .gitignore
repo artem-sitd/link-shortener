@@ -168,3 +168,5 @@ cython_debug/
 /notice_yandex
 /notice_yandex.pub
 /link_venv/
+.env.docker
+/.env.local
