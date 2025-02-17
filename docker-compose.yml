@@ -11,7 +11,7 @@ services:
     depends_on:
       - mongo
     ports:
-      - "8082:8080"
+      - "8080:8080"
     networks:
       - short-link-network
 
@@ -19,24 +19,28 @@ services:
     image: mongo:latest
     container_name: mongo-db
     ports:
-      - "27018:27017"
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
     networks:
       - short-link-network
-  nginx:
-    image: nginx:latest
-    container_name: nginx_proxy
-    depends_on:
-      - bot
-    restart: always
-    ports:
-      - "8081:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    networks:
-      - short-link-network
+
+
+      # этот nginx нужен только для локального тестирования, потому что на проде есть хостовой nginx,
+#      вне контейнеров. Он проксирует запросы напрямую в нужные контейнеры. А междудж собой контейнеры общаются по http
+#  nginx:
+#    image: nginx:latest
+#    container_name: nginx_proxy
+#    depends_on:
+#      - bot
+#    restart: always
+#    ports:
+#      - "8080:80"
+#      - "443:443"
+#    volumes:
+#      - ./nginx.conf:/etc/nginx/nginx.conf
+#    networks:
+#      - short-link-network
 
 
 networks:

@@ -2,7 +2,7 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def get_env_file(local: bool = True) -> Path:
+def get_env_file(local: bool = False) -> Path:
     return Path(__file__).parent / ".env.local" if local else Path(__file__).parent / ".env"
 
 
