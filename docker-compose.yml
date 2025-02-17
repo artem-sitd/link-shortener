@@ -4,14 +4,14 @@ services:
   bot:
     build:
       context: .
-      dockerfile: "app/Dockerfile"
+      dockerfile: "./Dockerfile"
     container_name: short-link-bot
     env_file:
-      - ".env"
+      - ".env.local"
     depends_on:
       - mongo
     ports:
-      - "5000:5000"
+      - "8082:8080"
     networks:
       - short-link-network
 
@@ -19,7 +19,7 @@ services:
     image: mongo:latest
     container_name: mongo-db
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
     networks:
@@ -27,12 +27,17 @@ services:
   nginx:
     image: nginx:latest
     container_name: nginx_proxy
+    depends_on:
+      - bot
     restart: always
     ports:
-      - "80:80"
+      - "8081:80"
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - short-link-network
+
 
 networks:
   short-link-network:

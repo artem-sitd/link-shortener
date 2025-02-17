@@ -1,9 +1,9 @@
 from aiogram import types
 from settings import settings
 from aiohttp import web
-from bot import dp, bot
+from app.bot import dp, bot
 import asyncio
-from database import collection
+from app.database import collection
 
 
 # здесь же прописать ручку для приема короткой ссылки для дальнейшего редиректа на имеющийся полный url
@@ -11,6 +11,7 @@ from database import collection
 async def redirect(request):
     # Получаем полный URL, по которому пришел запрос
     full_url = str(request.url)
+    print(f'redirect: {full_url}')
 
     # Ищем в базе данных
     link_data = await collection.find_one({"short_url": full_url})
@@ -46,6 +47,8 @@ async def main():
 
         # ручка для редиректов
         app.router.add_get('/s/{hash}', redirect)
+
+        # просто заглушка
         app.router.add_get('/', index_page)
 
         runner = web.AppRunner(app)

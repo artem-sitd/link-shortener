@@ -1,6 +1,6 @@
 import hashlib
 import datetime
-from database import collection, client, db
+from .database import collection
 from settings import settings
 
 
@@ -13,9 +13,7 @@ def generate_hash(original_url: str):
 
 # Функция для проверки наличия URL в базе
 async def check_existing_url(original_url: str):
-    print(f'collection: {collection}')
-    print(f'client: {client}')
-    print(f'db: {db}')
+    print(f'existing collection {collection}')
     existing_url = await collection.find_one({"original_url": original_url})
     return existing_url
 
@@ -26,6 +24,7 @@ async def create_unique_short_url(original_url: str):
     existing_url = await check_existing_url(original_url)
     if existing_url:
         # Если URL существует, возвращаем его короткую ссылку
+        print('existing_url!!')
         return existing_url["short_url"]
 
     # Если URL новый, генерируем новый короткий хэш
@@ -41,4 +40,5 @@ async def create_unique_short_url(original_url: str):
         "created_at": datetime.datetime.now(datetime.UTC),
     }
     await collection.insert_one(document)
+
     return short_url

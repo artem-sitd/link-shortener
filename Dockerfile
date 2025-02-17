@@ -2,7 +2,7 @@
 FROM python:3.12-slim
 
 # Установим рабочую директорию
-WORKDIR /app
+WORKDIR .
 
 COPY requirements.txt .
 
@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Открываем порт для бота
-EXPOSE 5000
+EXPOSE 8080
 
 # Запускаем бота
-CMD ["python", "app/main.py"]
+CMD ["python", "main.py"]

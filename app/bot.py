@@ -2,7 +2,7 @@ import re
 from aiogram.enums import ParseMode
 from aiogram import Bot
 from aiogram.client.bot import DefaultBotProperties
-from urls import create_unique_short_url
+from .urls import create_unique_short_url
 from aiogram import types, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.filters import Command
@@ -31,14 +31,12 @@ def is_valid_url(url: str) -> bool:
 # Команда /start
 @dp.message(Command("start"))
 async def send_welcome(message: types.Message):
-    print('start user')
     await message.reply("Привет! Отправь мне длинную ссылку, и я сделаю её короткой.")
 
 
 # Основной хэндлер для сокращения ссылки
 @dp.message()
 async def shorten_url(message: types.Message):
-    print(f'message from user: {message.text}')
     original_url = message.text.strip()
 
     if not is_valid_url(original_url):
