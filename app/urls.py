@@ -2,6 +2,7 @@ import hashlib
 import datetime
 from .database import collection
 from settings import settings
+from urllib.parse import urlparse
 
 
 # Функция для генерации хэша из оригинальной ссылки
@@ -30,13 +31,17 @@ async def create_unique_short_url(original_url: str):
     # Если URL новый, генерируем новый короткий хэш
     short_hash = generate_hash(original_url)
 
+    # парсим протокол
+    protocol = urlparse(original_url).scheme
+
     # и соединяем с нашим доменом
     short_url = f'{settings.main_domain}/s/{short_hash}'
 
     # создаем новый документ в монго с короткой, оригинальной ссылкой
     document = {
         "original_url": original_url,
-        "short_url": short_url,
+        "hash": short_hash,
+        'protocol': protocol,
         "created_at": datetime.datetime.now(datetime.UTC),
     }
     await collection.insert_one(document)

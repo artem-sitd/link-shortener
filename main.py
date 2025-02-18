@@ -9,12 +9,12 @@ from app.database import collection
 # здесь же прописать ручку для приема короткой ссылки для дальнейшего редиректа на имеющийся полный url
 # если такой короткой ссылки не найдено, тогда перевести на страницу заглушку "такой ссылки не существует"
 async def redirect(request):
-    # Получаем полный URL, по которому пришел запрос
-    full_url = str(request.url)
-    print(f'redirect: {full_url}')
+    # Парсим hash ссылки
+    hash = request.match_info['hash']
+    print(f'redirect: {hash}')
 
     # Ищем в базе данных
-    link_data = await collection.find_one({"short_url": full_url})
+    link_data = await collection.find_one({"hash": hash})
 
     if not link_data:
         return web.Response(text="Ссылка не найдена", status=404)
