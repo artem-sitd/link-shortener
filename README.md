@@ -30,7 +30,7 @@
    <li>Клонируйте репозиторий <code>git clone https://github.com/artem-sitd/link-shortener.git</code></li>
    <li>Переименуйте файл <code>env.local.template</code> в <code>.env.local</code>., вставьте ваш api-key напротив переменной 
 <code>telegram_api_key</code> после знака <code>=</code>.
-   Должно получиться что-то вроде <code>telegram_api_key=7711111VjMsdf5801:A74hGffoOomZMsPJTdoH_jbLIR6A4q8_bM3jM</code></li>
+   Должно получиться что-то вроде <code>telegram_api_key=7711801:A74hGffoOomZMsPJTdoH_jbLIR6A4q8_bM3jM</code></li>
    <li>В модуле <code>settings.py</code> в функции <b>get_env_file</b> необходимо присвоить переменной <b>local</b>
  значение <b>True</b>, для использования правильного 
  файла для переменных окружения. Должно получиться: <code>def get_env_file(local: bool = True) -> Path:</code></li>
@@ -58,13 +58,61 @@
 <li>Касательно настроек хостового Nginx: Во-первых указываете путь к SSL сертификатам, далее необходимо вставить проксирование 
 запросов на наши ручки контейнерного веб приложения. Учитывайте момент, что если у вас работает несколько контейнеров - 
 указывайте разные порты, но я предполагаю, что расписывать как это работает - будет неуместно в описании данного проекта. Во-вторых, предлагается указать следующую маршрутизацию:
+<p>Вот как выглядят мои настройки хостового nginx, расопложен по пути: <code>/etc/nginx/conf.d/pqpq.pw.conf</code></p>
+
+    server { # этот блок переадресовывает запросы по http на https 
+    listen 80; 
+    server_name pqpq.pw;
+    return 301 https://$host$request_uri;
+    }
+
+    server {
+    listen 443 ssl;
+    server_name pqpq.pw;
+
+      # это часть указывает на сертификаты ssl
+    ssl_certificate /etc/letsencrypt/live/pqpq.pw/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/pqpq.pw/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    location /webhook { # этот блок проксирует вебхуки на соответствующий обработчик веб приложения на локалхост контейнер,
+      # который слушает 8080 порт
+        proxy_pass http://localhost:8080/webhook;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location / {
+      # этот блок не обязателен, т.к. он может вести куда угодно, для бота он не нужен
+        proxy_pass http://localhost:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /s/ {
+      # этот блок обрабатывает редирект по нашим сокращенным ссылкам
+        proxy_pass http://localhost:8080/s/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    } }
+
+
 </li>
 <li> Получите api-key у бота <code>@BotFather</code>.</li>
 <li>Клонируйте репозиторий <code>git clone https://github.com/artem-sitd/link-shortener.git</code></li>
 <li>Переименуйте файл <code>env.template</code> в <code>.env</code>., вставьте ваш api-key напротив переменной 
 <code>telegram_api_key</code> после знака <code>=</code>.
-   Должно получиться что-то вроде <code>telegram_api_key=7711111VjMsdf5801:A74hGffoOomZMsPJTdoH_jbLIR6A4q8_bM3jM</code></li>
-<li></li>
+   Должно получиться что-то вроде <code>telegram_api_key=7711:A74hGffoOomZMsPJTdoH_jbLIR6A4q8_bM3jM</code></li>
+<li><code>WEBHOOK_HOST=</code> сюда вставьте ваш URL https и сюда тоже самое <code>main_domain=</code></li>
+   <li>В модуле <code>settings.py</code> в функции <b>get_env_file</b> необходимо присвоить переменной <b>local</b>
+ значение <b>False</b>, для использования правильного файла для переменных окружения. 
+Должно получиться: <code>def get_env_file(local: bool = False) -> Path:</code></li>
+<li>Убедитесь, что в файле <code>docker-compose.yml</code> для сервиса <b>bot</b> указаны порты, соответствующие
+ настройкам хостового nginx (например): <code>8080:8080</code></li>
 <li></li>
 </ol>
 
@@ -86,26 +134,41 @@
 <li>Настройка корректных перезапусков контейнеров</li>
 <li>Добавить поле с указанием id пользователя</li>
 <li>Добавить функционал с кнопкой в телеграмме о количестве сохраненных ссылок, датах у пользователя</li>
+<li>Изолировать монго от внешнего мира: 
+<ol>
+<li>убрать публикацию порта для mongo внутри docker-compose</li>
+<li>Заранее создать пользователя и пароль для чтения, записи в <b>конкретную</b> базу, указав их данные в 
+переменную окружения. <b>Наделив ограниченными правами!</b></li>
+<li>ограничить права для стандартного пользователя admin, либо отключить его</li>
+<li>создать одинаковую сеть для взаимодействующих между собой контейнеров (сделано)</li>
+<li>Подключаться к базе через имя сервиса docker контейнера: <code>environment:
+      MONGO_URI: mongodb://admin:adminpassword@mongo:27017/your_database_name</code></li>
+<li>Данные мероприятия направлены для защиты БД от типичной атаки:
 
+    READ__ME_TO_RECOVER_YOUR_DATA> db.README.find()
+    [{
+    _id: ObjectId('67b8ffad478a9b8d47'),
+    content: 'All your data is backed up. You must pay 0.0045 BTC to 
+    bc1qt3zrm0va2g5adut9pnwka76yrzwjp In 48 hours, your data 
+      will be publicly disclosed and deleted. (more information: go to 
+      htt://2o.wn/mb)After paying send mail to us: ramler+1qx4@onionmail.org
+      and we will provide a link for you to download your data. 
+      Your DBCODE is: 1OX'
+    }]
+</li>
+</ol></li>
 </ul>
 
 
-<h2 id="commands">Общие Полезные команды</h2>
 
-В случае выявление не точностей в этом файле или в целом в проекте tg: `@art_kak_dela`
+<h2 id="commands">Общие Полезные команды</h2>
 
 
 <ul> 
 <li>Установка вебхуков <code>npm install -g localtunnel</code></li>
 <li>Получение локальных вебхуков: <code>lt --port 8080</code></li>
-<li> <code></code></li>
+<li>Проверить статус вебхуков <code>curl https://api.telegram.org/bot<ваш апи ключ от бота>/getWebhookInfo</code></li>
 <li> <code></code></li>
 <li> <code></code></li>
 
 </ul>
-
-1. настройка хостового Nginx
-2. Вебхуки отправляются только на https
-3. Создание сети докера в ручную, для проксирования nxinx-ом сразу в контейнер по имени container_name,
-   указанным в докер компос
-4. в докер компос указать название сети для каждого контейнера + глобально + external
